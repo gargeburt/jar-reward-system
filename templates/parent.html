@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}家长管理 · 亲子双罐激励系统{% endblock %}
+{% block content %}
+<h1 class="page-title">👨‍👩‍👧 家长管理</h1>
+
+{% for row in rows %}
+<section class="child-manage">
+  <h2>🧒 {{ row['child']['username'] }}</h2>
+  <div class="jars-mini">
+    {% for jt in task_meta %}
+    <div class="mini">
+      <div>{{ task_meta[jt]['emoji'] }} {{ task_meta[jt]['name'] }}</div>
+      <div class="n">{{ row['jars'][jt]['balance'] }}<small> / {{ max_balance }}</small></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="sub-title">📅 今日任务（{{ today }}）</div>
+  {% for jt in task_meta %}
+  {% set t = row['tasks'][jt] %}
+  <div class="task-card task-{{ jt }}">
+    <div class="task-line">
+      <span class="task-emoji">{{ task_meta[jt]['emoji'] }}</span>
+      <div class="task-info">
+        <div class="task-title">{{ task_meta[jt]['name'] }}</div>
+      </div>
+      {% if t %}
+        <span class="status-badge status-{{ t['status'] }}">{{ status_names[t['status']] }}</span>
+      {% else %}
+        <span class="status-badge status-pending">未确认</span>
+      {% endif %}
+    </div>
+
+    {% if t and t['status'] != 'pending' %}
+    <div class="task-note">已确认（{{ status_names[t['status']] }}）。点错可修改当天结果：</div>
+    <div class="task-actions">
+      <form method="post" action="{{ url_for('task_modify') }}">
+        <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+        <input type="hidden" name="user_id" value="{{ row['child']['id'] }}">
+        <input type="hidden" name="task_type" value="{{ jt }}">
+        <input type="hidden" name="to" value="completed">
+        <button type="submit" class="btn btn-ok">✓ 改为完成</button>
+      </form>
+      <form method="post" action="{{ url_for('task_modify') }}"
+            data-confirm="确定要把该任务改为「未完成」吗？系统会自动扣减差额。">
+        <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+        <input type="hidden" name="user_id" value="{{ row['child']['id'] }}">
+        <input type="hidden" name="task_type" value="{{ jt }}">
+        <input type="hidden" name="to" value="failed">
+        <button type="submit" class="btn btn-fail">✗ 改为未完成</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="task-actions">
+      <form method="post" action="{{ url_for('task_confirm') }}">
+        <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+        <input type="hidden" name="user_id" value="{{ row['child']['id'] }}">
+        <input type="hidden" name="task_type" value="{{ jt }}">
+        <input type="hidden" name="result" value="completed">
+        <button type="submit" class="btn btn-ok">✓ 确认完成</button>
+      </form>
+      <form method="post" action="{{ url_for('task_confirm') }}">
+        <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+        <input type="hidden" name="user_id" value="{{ row['child']['id'] }}">
+        <input type="hidden" name="task_type" value="{{ jt }}">
+        <input type="hidden" name="result" value="failed">
+        <button type="submit" class="btn btn-fail">✗ 确认未完成</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <div class="sub-title">🛠 手工调整余额（原因必填，0~100 封顶）</div>
+  {% for jt in task_meta %}
+  <div class="adjust-block">
+    <div class="adjust-head">{{ task_meta[jt]['emoji'] }} {{ task_meta[jt]['name'] }} ｜ 当前 {{ row['jars'][jt]['balance'] }} 分</div>
+    <form method="post" action="{{ url_for('jar_adjust') }}" class="form adjust-inline">
+      <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+      <input type="hidden" name="user_id" value="{{ row['child']['id'] }}">
+      <input type="hidden" name="jar_type" value="{{ jt }}">
+      <span class="radios">
+        <label class="radio-inline"><input type="radio" name="action" value="add" checked> 增加</label>
+        <label class="radio-inline"><input type="radio" name="action" value="sub"> 减少</label>
+      </span>
+      <span class="chips">
+        <button type="button" class="chip" data-amount="1">+1</button>
+        <button type="button" class="chip" data-amount="5">+5</button>
+        <button type="button" class="chip" data-amount="10">+10</button>
+        <input type="number" name="amount" class="amt-input" min="1" max="100" value="1" required>
+      </span>
+      <label class="reason-line">原因
+        <input type="text" name="reason" placeholder="如：额外奖励 / 扣减零花钱" required>
+      </label>
+      <button type="submit" class="btn btn-primary">确认调整</button>
+    </form>
+  </div>
+  {% endfor %}
+</section>
+{% else %}
+<div class="empty-state">
+  <div class="empty-emoji">🧸</div>
+  <h2>还没有孩子账号</h2>
+  <p>先创建一个孩子账号，孩子登录后即可攒分提现。</p>
+</div>
+{% endfor %}
+
+<section class="create-child">
+  <h2>➕ 创建孩子账号</h2>
+  <form method="post" action="{{ url_for('create_child') }}" class="form">
+    <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+    <label>用户名
+      <input type="text" name="username" required>
+    </label>
+    <label>密码
+      <input type="password" name="password" required autocomplete="new-password">
+    </label>
+    <label>确认密码
+      <input type="password" name="password2" required autocomplete="new-password">
+    </label>
+    <button type="submit" class="btn btn-primary btn-block">创建孩子账号</button>
+  </form>
+</section>
+{% endblock %}

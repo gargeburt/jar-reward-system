@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}亲子双罐激励系统{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🌈 亲子双罐激励</div>
+  <nav class="main-nav">
+    {% if session.get('user_id') %}
+      <a href="{{ url_for('index') }}">首页</a>
+      <a href="{{ url_for('rules') }}">规则</a>
+      <a href="{{ url_for('history') }}">历史</a>
+      {% if session.get('role') == 'child' %}
+        <a href="{{ url_for('withdraw') }}">提现</a>
+      {% endif %}
+      {% if session.get('role') == 'parent' %}
+        <a href="{{ url_for('parent') }}">管理</a>
+      {% endif %}
+      <form method="post" action="{{ url_for('logout') }}" class="logout-form">
+        <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+        <button type="submit" class="linklike">{{ session.get('username', '') }} · 退出</button>
+      </form>
+    {% endif %}
+  </nav>
+</header>
+<main class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-list">
+      {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+<footer class="footer">亲子双罐激励系统 · 知识📚+能量⚡ · 一起加油！</footer>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

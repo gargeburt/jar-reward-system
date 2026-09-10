@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}出错了 · 亲子双罐激励系统{% endblock %}
+{% block content %}
+<div class="error-box">
+  <div class="code">{{ code }}</div>
+  <h1>{{ message }}</h1>
+  <p>如有疑问，请联系家长确认操作权限。</p>
+  <a class="btn btn-primary" href="{{ url_for('index') }}">返回首页</a>
+</div>
+{% endblock %}

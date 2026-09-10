@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}提现 · 亲子双罐激励系统{% endblock %}
+{% block content %}
+<div class="withdraw-hero">
+  <h1>🎁 我的提现</h1>
+  <p>知识 {{ knowledge['balance'] }} / 100 分 · 能量 {{ energy['balance'] }} / 100 分</p>
+</div>
+
+<div class="withdraw-cards">
+  <div class="w-card">
+    <h2>📚 知识罐 · 单罐提现</h2>
+    <p>当知识罐满 <b>{{ max_balance }} 分</b>，可兑换 <b>100 元</b>，兑换后知识罐清零。</p>
+    <div class="w-stat">当前 {{ knowledge['balance'] }} 分</div>
+    {% if knowledge['balance'] >= max_balance %}
+    <form method="post" action="{{ url_for('withdraw_post') }}"
+          data-confirm="确定用知识罐的100分兑换100元吗？确认后知识罐清零。">
+      <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+      <input type="hidden" name="action" value="single_knowledge">
+      <button type="submit" class="btn btn-primary">兑换 100 元</button>
+    </form>
+    {% else %}
+    <button type="button" class="btn locked" disabled>还差 {{ max_balance - knowledge['balance'] }} 分才能提现</button>
+    {% endif %}
+  </div>
+
+  <div class="w-card">
+    <h2>⚡ 能量罐 · 单罐提现</h2>
+    <p>当能量罐满 <b>{{ max_balance }} 分</b>，可兑换 <b>100 元</b>，兑换后能量罐清零。</p>
+    <div class="w-stat">当前 {{ energy['balance'] }} 分</div>
+    {% if energy['balance'] >= max_balance %}
+    <form method="post" action="{{ url_for('withdraw_post') }}"
+          data-confirm="确定用能量罐的100分兑换100元吗？确认后能量罐清零。">
+      <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+      <input type="hidden" name="action" value="single_energy">
+      <button type="submit" class="btn btn-primary">兑换 100 元</button>
+    </form>
+    {% else %}
+    <button type="button" class="btn locked" disabled>还差 {{ max_balance - energy['balance'] }} 分才能提现</button>
+    {% endif %}
+  </div>
+
+  <div class="w-card">
+    <h2>🌟 双罐同时兑换 · 特享 400 元</h2>
+    <p>两罐<b>同时</b>都满 <b>{{ max_balance }} 分</b>时一起兑换，奖励升级为 <b>400 元</b>！兑换后两罐清零。</p>
+    <div class="w-stat">当前 知识 {{ knowledge['balance'] }} / 能量 {{ energy['balance'] }} 分</div>
+    {% if knowledge['balance'] >= max_balance and energy['balance'] >= max_balance %}
+    <form method="post" action="{{ url_for('withdraw_post') }}"
+          data-confirm="两罐都满100分！确定同时兑换并拿到400元吗？确认后两罐清零。">
+      <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+      <input type="hidden" name="action" value="double">
+      <button type="submit" class="btn" style="background:#ff6f00;">兑换 400 元</button>
+    </form>
+    {% else %}
+    <button type="button" class="btn locked" disabled>
+      {% if knowledge['balance'] >= max_balance %}
+        能量罐还差 {{ max_balance - energy['balance'] }} 分
+      {% else %}
+        知识罐还差 {{ max_balance - knowledge['balance'] }} 分
+      {% endif %}
+    </button>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

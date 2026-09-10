@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}登录 · 亲子双罐激励系统{% endblock %}
+{% block content %}
+<div class="auth-card">
+  <div class="auth-emoji">🏠</div>
+  <h1 class="auth-title">亲子双罐激励系统</h1>
+  <p class="auth-sub">知识罐 📚 阅读 · 能量罐 ⚡ 运动</p>
+
+  {% if no_user %}
+    <div class="init-banner">👋 欢迎！首次使用，请先创建家长账号</div>
+    <form method="post" action="{{ url_for('login') }}" class="form">
+      <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+      <label>家长用户名
+        <input type="text" name="username" required autocomplete="username">
+      </label>
+      <label>密码
+        <input type="password" name="password" required autocomplete="new-password">
+      </label>
+      <label>确认密码
+        <input type="password" name="password2" required autocomplete="new-password">
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">创建家长账号</button>
+    </form>
+  {% else %}
+    <form method="post" action="{{ url_for('login') }}" class="form">
+      <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+      <label>用户名
+        <input type="text" name="username" required autocomplete="username">
+      </label>
+      <label>密码
+        <input type="password" name="password" required autocomplete="current-password">
+      </label>
+      <button type="submit" class="btn btn-primary btn-block">登录</button>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

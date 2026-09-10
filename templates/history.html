@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}历史记录 · 亲子双罐激励系统{% endblock %}
+{% block content %}
+<h1 class="page-title">📜 历史记录</h1>
+
+<div class="history-block">
+  <h2>🗒 任务记录</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>日期</th><th>孩子</th><th>任务</th><th>结果</th><th>名义奖励</th><th>确认时间</th></tr>
+      </thead>
+      <tbody>
+        {% for t in tasks %}
+        <tr>
+          <td>{{ t['task_date'] }}</td>
+          <td>{{ t['username'] }}</td>
+          <td>{{ task_meta.get(t['task_type'], {}).get('name', t['task_type']) }}</td>
+          <td><span class="status-badge status-{{ t['status'] }}">{{ status_names.get(t['status'], t['status']) }}</span></td>
+          <td>{{ "%+d"|format(t['reward_amount']) }}</td>
+          <td>{{ t['confirmed_at'] or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:var(--muted)">暂无任务记录</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="history-block">
+  <h2>💸 金额流水</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>时间</th><th>孩子</th><th>罐子</th><th>类型</th><th>变动</th><th>余额</th><th>原因</th></tr>
+      </thead>
+      <tbody>
+        {% for x in txns %}
+        <tr>
+          <td>{{ x['created_at'] }}</td>
+          <td>{{ x['username'] }}</td>
+          <td>{{ jar_names.get(x['jar_type'], x['jar_type']) }}</td>
+          <td>{{ op_names.get(x['op_type'], x['op_type']) }}</td>
+          <td class="{{ 'num-up' if x['change_amount'] >= 0 else 'num-down' }}">{{ "%+d"|format(x['change_amount']) }}</td>
+          <td>{{ x['before_balance'] }} → {{ x['after_balance'] }}</td>
+          <td>{{ x['reason'] or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;color:var(--muted)">暂无流水</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="history-block">
+  <h2>🏆 提现记录</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>时间</th><th>孩子</th><th>提现方式</th><th>知识罐</th><th>能量罐</th><th>到账</th></tr>
+      </thead>
+      <tbody>
+        {% for w in withdrawals %}
+        <tr>
+          <td>{{ w['created_at'] }}</td>
+          <td>{{ w['username'] }}</td>
+          <td>
+            {% if w['withdraw_type'] == 'double' %}双罐同时兑换{% else %}单罐提现{% endif %}
+          </td>
+          <td>{{ w['knowledge_amount'] }}</td>
+          <td>{{ w['energy_amount'] }}</td>
+          <td class="num-up">{{ w['reward_amount']  }} 元</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" style="text-align:center;color:var(--muted)">暂无提现记录</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

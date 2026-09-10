@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}规则 · 亲子双罐激励系统{% endblock %}
+{% block content %}
+<h1 class="page-title">📖 激励规则</h1>
+<section class="rule-list">
+  <article class="rule-item rule-knowledge">
+    <h2>📚 知识罐（阅读）</h2>
+    <ul>
+      <li>每天阅读 ≥ 15 分钟，由家长确认「完成」→ 知识罐 <b>+1 分</b></li>
+      <li>当天没有完成 → 确认「未完成」→ 知识罐 <b>-1 分</b></li>
+    </ul>
+  </article>
+  <article class="rule-item rule-energy">
+    <h2>⚡ 能量罐（运动）</h2>
+    <ul>
+      <li>每天运动打卡，由家长确认「完成」→ 能量罐 <b>+1 分</b></li>
+      <li>当天没有完成 → 确认「未完成」→ 能量罐 <b>-1 分</b></li>
+    </ul>
+  </article>
+  <article class="rule-item">
+    <h2>🗄 每罐上限与保底</h2>
+    <ul>
+      <li>每个罐子分数范围：<b>0 ~ 100</b>，达到 100 后不再上涨，低到 0 后不再下降</li>
+      <li>每日任务只允许确认「今天」；一旦确认当天不可重复结算</li>
+      <li>当天结果点错了？家长可在当天修改，系统会自动多退少补</li>
+    </ul>
+  </article>
+  <article class="rule-item">
+    <h2>🎁 提现规则</h2>
+    <ul>
+      <li><b>单罐提现：</b>任一罐攒满 100 分 → 兑换 <b>100 元</b>，该罐清零</li>
+      <li><b>双罐特惠：</b>两罐同时都满 100 分 → 一起兑换可获得 <b>400 元</b>（特例奖励），两罐清零</li>
+      <li>一边攒一边兑，奖励马上到手！</li>
+    </ul>
+  </article>
+  <article class="rule-item">
+    <h2>👨‍👩‍👧 家长责任</h2>
+    <ul>
+      <li>家长负责每天确认任务、可手工调整罐子分数（需填写原因）</li>
+      <li>遇到误操作，家长可在「管理」页纠正当天任务结果，系统自动计算差额</li>
+    </ul>
+  </article>
+</section>
+{% endblock %}

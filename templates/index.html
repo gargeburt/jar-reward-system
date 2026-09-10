@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}首页 · 亲子双罐激励系统{% endblock %}
+{% block content %}
+
+{% if target is none %}
+  <div class="empty-state">
+    <div class="empty-emoji">🏆</div>
+    <h2>还没有孩子账号</h2>
+    <p>请家长先到「管理」页面创建一个孩子账号，然后让孩子登录开始攒分吧！</p>
+    <a class="btn btn-primary" href="{{ url_for('parent') }}">去创建孩子账号</a>
+  </div>
+{% else %}
+
+  <section class="hello-card">
+    <h1>你好，{{ target['username'] }}{% if is_parent %}（家长视角·{{ target['username'] }}）{% endif %}！</h1>
+    <p class="date-line">{{ today }}</p>
+  </section>
+
+  <!-- 两罐进度 -->
+  <section class="jar-cards">
+    {% for jt in task_meta %}
+    {% set jar = jars.get(jt) %}
+    <div class="jar-card jar-{{ jt }}">
+      <div class="jar-head">
+        <span class="jar-emoji">{{ task_meta[jt]['emoji'] }}</span>
+        <span class="jar-name">{{ task_meta[jt]['name'] }}</span>
+      </div>
+      <div class="jar-num">
+        <strong>{{ jar['balance'] }}</strong><span class="jar-max">/{{ max_balance }} 分</span>
+      </div>
+      <div class="jar-bar"><div class="jar-bar-inner" style="width: {{ jar['balance'] * 100 // max_balance }}%"></div></div>
+      <p class="jar-desc">{{ task_meta[jt]['desc'] }}</p>
+    </div>
+    {% endfor %}
+  </section>
+
+  <!-- 今日任务 -->
+  <section class="today-tasks">
+    <h2>📅 今日任务</h2>
+    {% for jt in task_meta %}
+    {% set t = tasks.get(jt) %}
+    <div class="task-card task-{{ jt }}">
+      <div class="task-line">
+        <span class="task-emoji">{{ task_meta[jt]['emoji'] }}</span>
+        <div class="task-info">
+          <div class="task-title">{{ task_meta[jt]['name'] }}</div>
+          <div class="task-reward">{{ task_meta[jt]['reward_desc'] }} · 未完成 {{ task_meta[jt]['penalty_desc'] }}</div>
+        </div>
+        {% if t %}
+          <span class="status-badge status-{{ t['status'] }}">{{ status_names[t['status']] }}</span>
+        {% else %}
+          <span class="status-badge status-pending">未确认</span>
+        {% endif %}
+      </div>
+
+      {% if is_parent %}
+        {% if t and t['status'] != 'pending' %}
+        <p class="task-note">已由家长确认，可在「管理」页修改当天结果。</p>
+        {% else %}
+        <div class="task-actions">
+          <form method="post" action="{{ url_for('task_confirm') }}">
+            <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+            <input type="hidden" name="user_id" value="{{ target['id'] }}">
+            <input type="hidden" name="task_type" value="{{ jt }}">
+            <input type="hidden" name="result" value="completed">
+            <button type="submit" class="btn btn-ok">✓ 完成</button>
+          </form>
+          <form method="post" action="{{ url_for('task_confirm') }}">
+            <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+            <input type="hidden" name="user_id" value="{{ target['id'] }}">
+            <input type="hidden" name="task_type" value="{{ jt }}">
+            <input type="hidden" name="result" value="failed">
+            <button type="submit" class="btn btn-fail">✗ 未完成</button>
+          </form>
+        </div>
+        {% endif %}
+      {% else %}
+        {% if t and t['status'] == 'pending' %}
+        <p class="task-note">等爸爸妈妈确认今天的任务结果吧～</p>
+        {% endif %}
+      {% endif %}
+    </div>
+    {% endfor %}
+  </section>
+
+{% endif %}
+{% endblock %}
