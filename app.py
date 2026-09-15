@@ -256,6 +256,71 @@ def modify_task(uid: int, task_type: str, to_status: str, operator_id: int):
     return True, reason
 
 
+def backfill_task(uid: int, task_date: str, task_type: str, completed: bool, operator_id: int):
+    """补录指定日期的任务（家长操作）。
+
+    允许补录过去某一天未记录的任务：插入 daily_tasks 并把对应的 +1/-1 作用到当前余额，写入流水。
+    若该日期已存在已确认记录（非 pending），拒绝补录以避免历史冲突。
+    返回 (ok, message)
+    """
+    conn = get_db()
+    # 校验类型
+    if task_type not in JAR_TYPES:
+        return False, "非法任务类型"
+    try:
+        # 简单校验日期格式 YYYY-MM-DD
+        datetime.strptime(task_date, "%Y-%m-%d")
+    except Exception:
+        return False, "日期格式非法，需为 YYYY-MM-DD"
+
+    existing = conn.execute(
+        "SELECT * FROM daily_tasks WHERE user_id=? AND task_date=? AND task_type=?",
+        (uid, task_date, task_type),
+    ).fetchone()
+    if existing and existing["status"] != "pending":
+        return False, "该日期已有已确认记录，若需修改请使用修改功能"
+
+    expected = 1 if completed else -1
+    jar = get_jar(uid, task_type)
+    before = int(jar["balance"])
+    after = clamp(before + expected)
+    diff = after - before
+
+    status = "completed" if completed else "failed"
+    op_type = "daily_reward" if completed else "daily_penalty"
+    reason = TASK_META[task_type]["confirm_success"] if completed else TASK_META[task_type]["confirm_fail"]
+    now = _now()
+
+    with conn:
+        _upsert_jar(conn, uid, task_type, after)
+        if existing is not None:
+            conn.execute(
+                """
+                UPDATE daily_tasks SET status=?, reward_amount=?, confirmed_by=?,
+                  confirmed_at=?, updated_at=? WHERE id=?
+                """,
+                (status, expected, operator_id, now, now, existing["id"]),
+            )
+            task_id = existing["id"]
+        else:
+            cur = conn.execute(
+                """
+                INSERT INTO daily_tasks
+                  (user_id, task_date, task_type, status, reward_amount,
+                   confirmed_by, confirmed_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (uid, task_date, task_type, status, expected, operator_id, now, now),
+            )
+            task_id = cur.lastrowid
+        _write_transaction(
+            conn, user_id=uid, jar_type=task_type, change_amount=diff,
+            before_balance=before, after_balance=after, op_type=op_type,
+            operator_id=operator_id, reason=f"补录 {task_date}：{reason}", related_task_id=task_id,
+        )
+    return True, f"已补录：{task_date} {TASK_META[task_type]['name']} {STATUS_NAMES[status]}"
+
+
 def adjust_jar(uid: int, jar_type: str, amount, action: str, reason: str, operator_id: int):
     """家长手工调整余额（受 0..100 上限约束，原因必填）。"""
     conn = get_db()
@@ -473,35 +538,45 @@ def create_app(test_config=None):
 
     # ---------- 页面 ----------
     @app.route("/")
-    @login_required
     def index():
+        # 允许匿名查看：若为家长/孩子按原逻辑显示；匿名时展示第一位孩子（本地家庭单机场景）
+        conn = get_db()
         role = session.get("role")
         if role == "parent":
-            child_row = get_db().execute(
+            child_row = conn.execute(
                 "SELECT * FROM users WHERE role='child' ORDER BY id LIMIT 1"
             ).fetchone()
             target = child_row
-        else:
+        elif role == "child":
             target = _load_user(session["user_id"])
+        else:
+            target = conn.execute(
+                "SELECT * FROM users WHERE role='child' ORDER BY id LIMIT 1"
+            ).fetchone()
         content = build_home(target)
         return render_template("index.html", **content)
 
     @app.route("/rules")
-    @login_required
     def rules():
         return render_template("rules.html")
 
     @app.route("/history")
-    @login_required
     def history():
         conn = get_db()
-        if session.get("role") == "parent":
+        role = session.get("role")
+        if role == "parent":
             users = conn.execute(
                 "SELECT * FROM users WHERE role='child' ORDER BY id"
             ).fetchall()
             uid_list = [u["id"] for u in users] or [0]
-        else:
+        elif role == "child":
             uid_list = [session["user_id"]]
+        else:
+            # 匿名查看历史：展示第一位孩子的历史（单机家庭常见需求）
+            child = conn.execute(
+                "SELECT * FROM users WHERE role='child' ORDER BY id LIMIT 1"
+            ).fetchone()
+            uid_list = [child["id"]] if child else [0]
 
         placeholders = ",".join("?" * len(uid_list))
         tasks = conn.execute(
@@ -587,10 +662,25 @@ def create_app(test_config=None):
         return redirect(url_for("parent"))
 
     @app.route("/withdraw")
-    @child_required
     def withdraw():
-        k = get_jar(session["user_id"], "knowledge")
-        e = get_jar(session["user_id"], "energy")
+        # GET: 允许匿名/孩子/家长查看当前罐子余额（但仅孩子登录时可执行 POST 提现）
+        conn = get_db()
+        role = session.get("role")
+        if role == "parent":
+            # 家长查看时跳回家长管理页
+            return redirect(url_for("parent"))
+        if role == "child":
+            uid = session["user_id"]
+        else:
+            child = conn.execute(
+                "SELECT * FROM users WHERE role='child' ORDER BY id LIMIT 1"
+            ).fetchone()
+            uid = child["id"] if child else None
+        if uid is None:
+            return render_template("withdraw.html", knowledge=None, energy=None,
+                                   max_balance=MAX_BALANCE)
+        k = get_jar(uid, "knowledge")
+        e = get_jar(uid, "energy")
         return render_template("withdraw.html", knowledge=k, energy=e,
                                max_balance=MAX_BALANCE)
 
@@ -647,6 +737,24 @@ def create_app(test_config=None):
         ok, msg = adjust_jar(uid, jar_type, amount, action, reason, session["user_id"])
         flash(msg, "success" if ok else "error")
         return redirect(url_for("parent"))
+
+    @app.route("/parent/backfill", methods=["POST"])
+    @parent_required
+    def parent_backfill():
+        try:
+            uid = int(request.form.get("user_id"))
+        except (TypeError, ValueError):
+            abort(400)
+        task_date = request.form.get("task_date")
+        task_type = request.form.get("task_type")
+        result = request.form.get("result")
+        if task_type not in JAR_TYPES or result not in ("completed", "failed"):
+            abort(400)
+        if get_target_child(uid) is None:
+            abort(403)
+        ok, msg = backfill_task(uid, task_date, task_type, result == "completed", session["user_id"])
+        flash(msg, "success" if ok else "error")
+        return redirect(request.referrer or url_for("parent"))
 
     # ---------- 写操作（孩子：仅提现）----------
     @app.route("/withdraw", methods=["POST"])

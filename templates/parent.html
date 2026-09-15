@@ -71,6 +71,29 @@
   </div>
   {% endfor %}
 
+  <div class="sub-title">📌 补录历史任务（若某日忘记记录）</div>
+  <form method="post" action="{{ url_for('parent_backfill') }}" class="form backfill-inline">
+    <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
+    <input type="hidden" name="user_id" value="{{ row['child']['id'] }}">
+    <label>日期
+      <input type="date" name="task_date" required>
+    </label>
+    <label>任务
+      <select name="task_type">
+        {% for jt in task_meta %}
+        <option value="{{ jt }}">{{ task_meta[jt]['name'] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>结果
+      <select name="result">
+        <option value="completed">完成 (+1)</option>
+        <option value="failed">未完成 (-1)</option>
+      </select>
+    </label>
+    <button type="submit" class="btn btn-primary">补录</button>
+  </form>
+
   <div class="sub-title">🛠 手工调整余额（原因必填，0~100 封顶）</div>
   {% for jt in task_meta %}
   <div class="adjust-block">
