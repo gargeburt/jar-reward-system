@@ -24,6 +24,11 @@
         <input type="hidden" name="_csrf" value="{{ session.get('_csrf', '') }}">
         <button type="submit" class="linklike">{{ session.get('username', '') }} · 退出</button>
       </form>
+    {% else %}
+      <a href="{{ url_for('index') }}">首页</a>
+      <a href="{{ url_for('rules') }}">规则</a>
+      <a href="{{ url_for('history') }}">历史</a>
+      <a href="{{ url_for('login') }}">登录</a>
     {% endif %}
   </nav>
 </header>

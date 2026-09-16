@@ -72,7 +72,6 @@
       <ColNames>user_id
 task_date
 task_type</ColNames>
-      <ColumnCollations></ColumnCollations>
       <Unique>1</Unique>
     </index>
     <key id="23" parent="6">
@@ -138,7 +137,6 @@ task_type</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <ColNames>user_id
 jar_type</ColNames>
-      <ColumnCollations></ColumnCollations>
       <Unique>1</Unique>
     </index>
     <key id="36" parent="7">
@@ -282,7 +280,6 @@ jar_type</ColNames>
     <index id="67" parent="11" name="sqlite_autoindex_users_1">
       <NameSurrogate>1</NameSurrogate>
       <ColNames>username</ColNames>
-      <ColumnCollations></ColumnCollations>
       <Unique>1</Unique>
     </index>
     <key id="68" parent="11">

@@ -534,7 +534,7 @@ def create_app(test_config=None):
     @login_required
     def logout():
         session.clear()
-        return redirect(url_for("login"))
+        return redirect(url_for("index"))
 
     # ---------- 页面 ----------
     @app.route("/")
